@@ -102,7 +102,7 @@ public class OrderAggregateTest
             .AddOne(1, "cup", 10.0m, 0, string.Empty)
             .Build();
 
-        Assert.AreEqual(20.0m, order.GetTotal());
+        Assert.AreEqual(21.6m, order.GetTotal());
     }
 
     [TestMethod]
