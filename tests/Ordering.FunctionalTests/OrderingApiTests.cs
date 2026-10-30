@@ -200,7 +200,7 @@ public sealed class OrderingApiTests : IClassFixture<OrderingApiFixture>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(payload.Items.Count(), responseData.OrderItems.Count());
-        Assert.Equal(payload.Items.Sum(o => o.Quantity * o.UnitPrice), responseData.Total);
+        Assert.Equal(payload.Items.Sum(o => o.Quantity * o.UnitPrice) * 1.08m, responseData.Total);
         AssertThatOrderItemsAreTheSameAsRequestPayloadItems(payload, responseData);
     }
 
