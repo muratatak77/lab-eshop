@@ -19,6 +19,10 @@ public record CatalogItemReviewSummary(
     /// Builds a summary from per-rating counts as produced by a GROUP BY query. Ratings with no
     /// reviews may be omitted from <paramref name="counts"/>; they are reported with a zero count.
     /// </summary>
+    /// <returns>
+    /// The summary for <paramref name="catalogItemId"/>, which always has one rating count per star
+    /// value, highest first.
+    /// </returns>
     public static CatalogItemReviewSummary Create(int catalogItemId, IEnumerable<CatalogRatingCount> counts)
     {
         var byRating = counts

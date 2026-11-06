@@ -62,7 +62,7 @@ GET {{HostAddress}}/api/catalog/items/1/reviews/summary?api-version={{ApiVersion
 
 ###
 
-# Ratings outside 1-5 or a blank author name return a 400 ValidationProblem response
+# A valid review returns 201 Created
 
 POST {{HostAddress}}/api/catalog/items/1/reviews?api-version={{ApiVersion}}
 content-type: application/json
@@ -72,4 +72,16 @@ content-type: application/json
   "rating": 5,
   "title": "Great on the trail",
   "comment": "Comfortable from the first wear and kept my feet dry."
+}
+
+###
+
+# Ratings outside 1-5 or a blank author name return a 400 ValidationProblem response
+
+POST {{HostAddress}}/api/catalog/items/1/reviews?api-version={{ApiVersion}}
+content-type: application/json
+
+{
+  "authorName": " ",
+  "rating": 6
 }

@@ -199,7 +199,7 @@
             await CatalogService.AddItemReview(ItemId, new CreateCatalogItemReviewRequest(
                 authorName, Review.Rating!.Value, Review.Title, Review.Comment));
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (ex is HttpRequestException or TimeoutRejectedException)
         {
             Logger.LogError(ex, "Could not post review for catalog item {CatalogItemId}", ItemId);
             errorMessage = "Sorry, we couldn't post your review. Please try again.";

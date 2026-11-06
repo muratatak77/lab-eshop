@@ -20,6 +20,7 @@ public record CreateCatalogItemReviewRequest(
     /// <see cref="Microsoft.AspNetCore.Http.TypedResults.ValidationProblem(IDictionary{string, string[]}, string?, string?, string?, string?, IDictionary{string, object?}?)"/>.
     /// An empty dictionary means the request is valid.
     /// </summary>
+    /// <returns>The validation errors keyed by property name; empty when the request is valid.</returns>
     public Dictionary<string, string[]> Validate()
     {
         var errors = new Dictionary<string, string[]>();
@@ -55,6 +56,7 @@ public record CreateCatalogItemReviewRequest(
     /// Creates the review entity for <paramref name="catalogItemId"/>. Whitespace is trimmed and blank
     /// optional fields are stored as <see langword="null"/>. Call <see cref="Validate"/> first.
     /// </summary>
+    /// <returns>The trimmed review entity, not yet saved.</returns>
     public CatalogItemReview ToReview(int catalogItemId, DateTimeOffset createdAt) =>
         new(AuthorName.Trim())
         {

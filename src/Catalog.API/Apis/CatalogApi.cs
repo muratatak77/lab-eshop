@@ -469,6 +469,13 @@ public static class CatalogApi
         return TypedResults.NoContent();
     }
 
+    /// <summary>
+    /// Lists the reviews of a catalog item, newest first, one page at a time.
+    /// </summary>
+    /// <returns>
+    /// 200 with the requested page of reviews and the total review count, or 404 when the catalog
+    /// item does not exist.
+    /// </returns>
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     public static async Task<Results<Ok<PaginatedItems<CatalogItemReview>>, NotFound>> GetItemReviews(
         [AsParameters] PaginationRequest paginationRequest,
@@ -497,6 +504,13 @@ public static class CatalogApi
         return TypedResults.Ok(new PaginatedItems<CatalogItemReview>(pageIndex, pageSize, totalReviews, reviewsOnPage));
     }
 
+    /// <summary>
+    /// Gets the review count, average rating and per-star breakdown of a catalog item.
+    /// </summary>
+    /// <returns>
+    /// 200 with the rating summary (one entry per star value, zero counts included), or 404 when the
+    /// catalog item does not exist.
+    /// </returns>
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     public static async Task<Results<Ok<CatalogItemReviewSummary>, NotFound>> GetItemReviewSummary(
         [AsParameters] CatalogServices services,
@@ -516,6 +530,13 @@ public static class CatalogApi
         return TypedResults.Ok(CatalogItemReviewSummary.Create(id, counts));
     }
 
+    /// <summary>
+    /// Adds a review to a catalog item.
+    /// </summary>
+    /// <returns>
+    /// 201 with the saved review, 400 with the validation errors when the request is invalid, or 404
+    /// when the catalog item does not exist.
+    /// </returns>
     public static async Task<Results<Created<CatalogItemReview>, ValidationProblem, NotFound>> CreateItemReview(
         [AsParameters] CatalogServices services,
         [FromServices] TimeProvider timeProvider,
@@ -540,6 +561,7 @@ public static class CatalogApi
 
         services.Logger.LogInformation("Added {Rating}-star review {ReviewId} for catalog item {CatalogItemId}", review.Rating, review.Id, id);
 
+        // There is no single-review route, so the Location header points at the item's reviews collection.
         return TypedResults.Created($"/api/catalog/items/{id}/reviews", review);
     }
 
