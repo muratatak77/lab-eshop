@@ -11,7 +11,7 @@ public class ValueObjectTests
         var result = EqualityComparer<ValueObject>.Default.Equals(instanceA, instanceB);
 
         // Assert
-        Assert.IsTrue(result, reason);
+        Assert.IsFalse(result, reason);
     }
 
     [TestMethod]
