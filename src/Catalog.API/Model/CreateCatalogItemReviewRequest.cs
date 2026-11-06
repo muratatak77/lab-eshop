@@ -34,7 +34,7 @@ public record CreateCatalogItemReviewRequest(
             errors[nameof(AuthorName)] = [$"The author name must be at most {CatalogItemReview.AuthorNameMaxLength} characters."];
         }
 
-        if (Rating is < CatalogItemReview.MinRating)
+        if (Rating is < CatalogItemReview.MinRating or > CatalogItemReview.MaxRating)
         {
             errors[nameof(Rating)] = [$"The rating must be between {CatalogItemReview.MinRating} and {CatalogItemReview.MaxRating}."];
         }
