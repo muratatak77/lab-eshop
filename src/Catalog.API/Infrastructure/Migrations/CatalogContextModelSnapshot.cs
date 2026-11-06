@@ -18,7 +18,7 @@ namespace eShop.Catalog.API.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0-rtm.23512.13")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
@@ -96,6 +96,46 @@ namespace eShop.Catalog.API.Infrastructure.Migrations
                     b.ToTable("Catalog", (string)null);
                 });
 
+            modelBuilder.Entity("eShop.Catalog.API.Model.CatalogItemReview", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("CatalogItemId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CatalogItemId", "CreatedAt");
+
+                    b.ToTable("CatalogItemReview", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CatalogItemReview_Rating", "\"Rating\" BETWEEN 1 AND 5");
+                        });
+                });
+
             modelBuilder.Entity("eShop.Catalog.API.Model.CatalogType", b =>
                 {
                     b.Property<int>("Id")
@@ -162,6 +202,17 @@ namespace eShop.Catalog.API.Infrastructure.Migrations
                     b.Navigation("CatalogBrand");
 
                     b.Navigation("CatalogType");
+                });
+
+            modelBuilder.Entity("eShop.Catalog.API.Model.CatalogItemReview", b =>
+                {
+                    b.HasOne("eShop.Catalog.API.Model.CatalogItem", "CatalogItem")
+                        .WithMany()
+                        .HasForeignKey("CatalogItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CatalogItem");
                 });
 #pragma warning restore 612, 618
         }

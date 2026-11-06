@@ -346,6 +346,222 @@
         }
       }
     },
+    "/api/catalog/items/{id}/reviews": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "List catalog item reviews",
+        "description": "Get a paginated list of reviews for a catalog item, newest first.",
+        "operationId": "ListItemReviews",
+        "parameters": [
+          {
+            "name": "PageSize",
+            "in": "query",
+            "description": "Number of items to return in a single page of results",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32",
+              "default": 10
+            }
+          },
+          {
+            "name": "PageIndex",
+            "in": "query",
+            "description": "The index of the page of results to return",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The catalog item id",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "The API version, in the format 'major.minor'.",
+            "required": true,
+            "schema": {
+              "enum": [
+                "1.0"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedItemsOfCatalogItemReview"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Review a catalog item",
+        "description": "Add a star rating, with an optional title and comment, to a catalog item.",
+        "operationId": "CreateItemReview",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The catalog item id",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "The API version, in the format 'major.minor'.",
+            "required": true,
+            "schema": {
+              "enum": [
+                "1.0"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCatalogItemReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemReview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/catalog/items/{id}/reviews/summary": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Get catalog item rating summary",
+        "description": "Get the review count, average rating and per-star breakdown for a catalog item.",
+        "operationId": "GetItemReviewSummary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The catalog item id",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "description": "The API version, in the format 'major.minor'.",
+            "required": true,
+            "schema": {
+              "enum": [
+                "1.0"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemReviewSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/catalog/catalogtypes": {
       "get": {
         "tags": [
@@ -1168,6 +1384,123 @@
           }
         }
       },
+      "CatalogItemReview": {
+        "required": [
+          "authorName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "catalogItemId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "rating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "comment": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CatalogItemReviewSummary": {
+        "required": [
+          "catalogItemId",
+          "reviewCount",
+          "averageRating",
+          "ratingCounts"
+        ],
+        "type": "object",
+        "properties": {
+          "catalogItemId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "reviewCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "averageRating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ratingCounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogRatingCount"
+            }
+          }
+        }
+      },
+      "CatalogRatingCount": {
+        "required": [
+          "rating",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "rating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "CatalogType": {
         "required": [
           "type"
@@ -1184,6 +1517,91 @@
           },
           "type": {
             "type": "string"
+          }
+        }
+      },
+      "CreateCatalogItemReviewRequest": {
+        "required": [
+          "authorName",
+          "rating",
+          "title",
+          "comment"
+        ],
+        "type": "object",
+        "properties": {
+          "authorName": {
+            "type": "string",
+            "description": "The display name of the shopper writing the review"
+          },
+          "rating": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The star rating, from 1 (worst) to 5 (best)",
+            "format": "int32"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "An optional one-line headline for the review"
+          },
+          "comment": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "An optional free-text comment"
+          }
+        }
+      },
+      "HttpValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         }
       },
@@ -1224,6 +1642,47 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CatalogItem"
+            }
+          }
+        }
+      },
+      "PaginatedItemsOfCatalogItemReview": {
+        "required": [
+          "pageIndex",
+          "pageSize",
+          "count",
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "pageIndex": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogItemReview"
             }
           }
         }
@@ -1274,6 +1733,9 @@
     },
     {
       "name": "Catalog"
+    },
+    {
+      "name": "Reviews"
     },
     {
       "name": "Types"

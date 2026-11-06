@@ -1,4 +1,5 @@
 ﻿using eShop.Catalog.API.Services;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 public static class Extensions
 {
@@ -47,5 +48,7 @@ public static class Extensions
         }
 
         builder.Services.AddScoped<ICatalogAI, CatalogAI>();
+
+        builder.Services.TryAddSingleton(TimeProvider.System);
     }
 }

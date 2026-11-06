@@ -1,0 +1,263 @@
+@using System.ComponentModel.DataAnnotations
+@using System.Globalization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Polly.Timeout
+@using eShop.WebAppComponents.Item
+@inject CatalogService CatalogService
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ILogger<ItemReviews> Logger
+
+<section class="item-reviews" id="reviews" aria-labelledby="reviews-heading">
+    <h2 id="reviews-heading">Customer reviews</h2>
+
+    @if (summary is not null)
+    {
+        <div class="reviews-layout">
+            <div class="reviews-summary">
+                @if (summary.ReviewCount > 0)
+                {
+                    <p class="reviews-average">
+                        <span class="reviews-average-value">@summary.AverageRating.ToString("0.0", CultureInfo.InvariantCulture)</span>
+                        <StarRating Rating="@summary.AverageRating" Size="lg" />
+                    </p>
+                    <p class="reviews-count">Based on @summary.ReviewCount @(summary.ReviewCount == 1 ? "review" : "reviews")</p>
+
+                    <ul class="reviews-breakdown">
+                        @foreach (var row in summary.RatingCounts)
+                        {
+                            <li>
+                                <span class="reviews-breakdown-label">@row.Rating star</span>
+                                <span class="reviews-breakdown-bar" aria-hidden="true">
+                                    <span style="width: @Percent(row.Count)%"></span>
+                                </span>
+                                <span class="reviews-breakdown-count">@row.Count</span>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="reviews-empty">No reviews yet.</p>
+                }
+
+                @if (IsLoggedIn)
+                {
+                    <EditForm EditContext="@editContext" FormName="@FormName" OnSubmit="@HandleSubmitAsync" class="review-form" Enhance>
+                        <DataAnnotationsValidator />
+                        <h3>@(summary.ReviewCount > 0 ? "Write a review" : "Be the first to review this product")</h3>
+
+                        @if (submitted)
+                        {
+                            <p class="review-form-success" role="status">Thanks! Your review has been posted.</p>
+                        }
+
+                        <fieldset class="review-form-rating">
+                            <legend>Your rating</legend>
+                            <InputRadioGroup @bind-Value="@Review.Rating">
+                                @for (var star = 1; star <= 5; star++)
+                                {
+                                    <label>
+                                        <InputRadio TValue="int?" Value="@star" />
+                                        <span>@star <span aria-hidden="true">&#9733;</span><span class="visually-hidden">@(star == 1 ? "star" : "stars")</span></span>
+                                    </label>
+                                }
+                            </InputRadioGroup>
+                            <ValidationMessage For="@(() => Review.Rating)" />
+                        </fieldset>
+
+                        <label>
+                            Title <span class="review-form-optional">(optional)</span>
+                            <InputText @bind-Value="@Review.Title" maxlength="@ReviewFormModel.TitleMaxLength" />
+                            <ValidationMessage For="@(() => Review.Title)" />
+                        </label>
+
+                        <label>
+                            Review <span class="review-form-optional">(optional)</span>
+                            <InputTextArea @bind-Value="@Review.Comment" rows="4" maxlength="@ReviewFormModel.CommentMaxLength" />
+                            <ValidationMessage For="@(() => Review.Comment)" />
+                        </label>
+
+                        @if (errorMessage is not null)
+                        {
+                            <p class="review-form-error" role="alert">@errorMessage</p>
+                        }
+                        <button class="button button-secondary" type="submit">Post review</button>
+                    </EditForm>
+                }
+                else
+                {
+                    <p class="reviews-login">
+                        <a href="@Pages.User.LogIn.Url(Nav)">Log in</a> to write a review.
+                    </p>
+                }
+            </div>
+
+            <div class="reviews-list">
+                @if (reviews is { Data.Count: > 0 })
+                {
+                    <ol>
+                        @foreach (var review in reviews.Data)
+                        {
+                            <li class="review">
+                                <div class="review-header">
+                                    <StarRating Rating="@review.Rating" Size="sm" />
+                                    @if (!string.IsNullOrEmpty(review.Title))
+                                    {
+                                        <h3 class="review-title">@review.Title</h3>
+                                    }
+                                </div>
+                                <p class="review-byline">
+                                    @review.AuthorName &middot;
+                                    <time datetime="@review.CreatedAt.ToString("O", CultureInfo.InvariantCulture)">@review.CreatedAt.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)</time>
+                                </p>
+                                @if (!string.IsNullOrEmpty(review.Comment))
+                                {
+                                    <p class="review-comment">@review.Comment</p>
+                                }
+                            </li>
+                        }
+                    </ol>
+
+                    @if (TotalPages > 1)
+                    {
+                        <nav class="reviews-pager" aria-label="Review pages">
+                            @if (CurrentPage > 0)
+                            {
+                                <a href="@PageUrl(CurrentPage - 1)">Newer reviews</a>
+                            }
+                            <span>Page @(CurrentPage + 1) of @TotalPages</span>
+                            @if (CurrentPage < TotalPages - 1)
+                            {
+                                <a href="@PageUrl(CurrentPage + 1)">Older reviews</a>
+                            }
+                        </nav>
+                    }
+                }
+            </div>
+        </div>
+    }
+    else if (reviewsUnavailable)
+    {
+        <p class="reviews-empty" role="status">Reviews are unavailable right now. Please try again later.</p>
+    }
+</section>
+
+@code {
+    private const string FormName = "item-review";
+    private const int PageSize = 5;
+
+    private CatalogItemReviewSummary? summary;
+    private CatalogItemReviewResult? reviews;
+    private EditContext editContext = default!;
+    private string? errorMessage;
+    private bool submitted;
+    private bool reviewsUnavailable;
+
+    [Parameter, EditorRequired]
+    public int ItemId { get; set; }
+
+    [Parameter]
+    public bool IsLoggedIn { get; set; }
+
+    [SupplyParameterFromQuery(Name = "reviewPage")]
+    public int? ReviewPage { get; set; }
+
+    [SupplyParameterFromForm(FormName = FormName)]
+    public ReviewFormModel Review { get; set; } = default!;
+
+    private int CurrentPage => Math.Max(ReviewPage ?? 0, 0);
+
+    private int TotalPages => reviews is null ? 0 : (int)Math.Ceiling(reviews.Count / (double)PageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Review ??= new ReviewFormModel();
+        editContext = new EditContext(Review);
+
+        await LoadReviewsAsync();
+    }
+
+    private async Task HandleSubmitAsync()
+    {
+        errorMessage = null;
+
+        var authorName = await AuthenticationStateProvider.GetUserNameAsync();
+        if (!IsLoggedIn || string.IsNullOrWhiteSpace(authorName))
+        {
+            Nav.NavigateTo(Pages.User.LogIn.Url(Nav));
+            return;
+        }
+
+        if (!editContext.Validate())
+        {
+            return;
+        }
+
+        try
+        {
+            await CatalogService.AddItemReview(ItemId, new CreateCatalogItemReviewRequest(
+                authorName, Review.Rating!.Value, Review.Title, Review.Comment));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TimeoutRejectedException)
+        {
+            Logger.LogError(ex, "Could not post review for catalog item {CatalogItemId}", ItemId);
+            errorMessage = "Sorry, we couldn't post your review. Please try again.";
+            return;
+        }
+
+        submitted = true;
+        Review = new ReviewFormModel();
+        editContext = new EditContext(Review);
+
+        // Show the new review at the top of the first page.
+        ReviewPage = 0;
+        await LoadReviewsAsync();
+    }
+
+    private async Task LoadReviewsAsync()
+    {
+        try
+        {
+            var summaryTask = CatalogService.GetItemReviewSummary(ItemId);
+            var reviewsTask = CatalogService.GetItemReviews(ItemId, CurrentPage, PageSize);
+            await Task.WhenAll(summaryTask, reviewsTask);
+
+            summary = summaryTask.Result;
+            reviews = reviewsTask.Result;
+            reviewsUnavailable = false;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TimeoutRejectedException)
+        {
+            // A reviews outage must not take down the whole product page.
+            Logger.LogError(ex, "Could not load reviews for catalog item {CatalogItemId}", ItemId);
+            summary = null;
+            reviews = null;
+            reviewsUnavailable = true;
+        }
+    }
+
+    private string Percent(int count) =>
+        summary is { ReviewCount: > 0 }
+            ? (count * 100.0 / summary.ReviewCount).ToString("0.#", CultureInfo.InvariantCulture)
+            : "0";
+
+    private string PageUrl(int page) =>
+        Nav.GetUriWithQueryParameter("reviewPage", page == 0 ? null : page) + "#reviews";
+
+    public class ReviewFormModel
+    {
+        public const int TitleMaxLength = 120;
+        public const int CommentMaxLength = 2000;
+
+        [Required(ErrorMessage = "Choose a star rating.")]
+        [Range(1, 5, ErrorMessage = "Choose a star rating.")]
+        public int? Rating { get; set; }
+
+        [StringLength(TitleMaxLength)]
+        public string? Title { get; set; }
+
+        [StringLength(CommentMaxLength)]
+        public string? Comment { get; set; }
+    }
+}

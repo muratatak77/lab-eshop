@@ -1,0 +1,34 @@
+@using System.Globalization
+
+@* Read-only star rating. Partial values are drawn by clipping a filled row of
+   stars over an outlined row, so 4.3 shows four and a third stars. *@
+<span class="star-rating star-rating-@Size" role="img" aria-label="@Label">
+    <span class="star-rating-track" aria-hidden="true">
+        @for (var i = 0; i < MaxRating; i++)
+        {
+            <svg viewBox="0 0 24 24"><path d="@StarPath" /></svg>
+        }
+    </span>
+    <span class="star-rating-fill" aria-hidden="true" style="width: @FillPercent.ToString("0.##", CultureInfo.InvariantCulture)%">
+        @for (var i = 0; i < MaxRating; i++)
+        {
+            <svg viewBox="0 0 24 24"><path d="@StarPath" /></svg>
+        }
+    </span>
+</span>
+
+@code {
+    private const int MaxRating = 5;
+    private const string StarPath = "M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.54L12 17.5l-5.87 3.08 1.12-6.54L2.5 9.41l6.56-.95L12 2.5z";
+
+    [Parameter, EditorRequired]
+    public double Rating { get; set; }
+
+    /// <summary>One of <c>sm</c>, <c>md</c> or <c>lg</c>.</summary>
+    [Parameter]
+    public string Size { get; set; } = "md";
+
+    private double FillPercent => Math.Clamp(Rating, 0, MaxRating) / MaxRating * 100;
+
+    private string Label => $"Rated {Rating.ToString("0.#", CultureInfo.InvariantCulture)} out of {MaxRating}";
+}
