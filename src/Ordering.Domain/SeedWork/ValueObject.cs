@@ -42,3 +42,5 @@ public abstract class ValueObject
         return this.MemberwiseClone() as ValueObject;
     }
 }
+
+// Lab note.
