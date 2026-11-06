@@ -37,7 +37,7 @@ export default defineConfig({
     {
       name: 'e2e tests logged in',
       testMatch: ['**/CartTest.spec.ts', '**/CheckoutTest.spec.ts'],
-      dependencies: ['setup'],
+      dependencies: ['setup'],  // changed on the base while this PR was open (1794001227)
       use: {
         storageState: STORAGE_STATE,
       },
