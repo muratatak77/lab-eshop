@@ -51,3 +51,25 @@ content-type: application/json
   "catalogTypeId": 1,
   "catalogBrandId": 2
 }
+
+###
+
+GET {{HostAddress}}/api/catalog/items/1/reviews?api-version={{ApiVersion}}&pageSize=5
+
+###
+
+GET {{HostAddress}}/api/catalog/items/1/reviews/summary?api-version={{ApiVersion}}
+
+###
+
+# Ratings outside 1-5 or a blank author name return a 400 ValidationProblem response
+
+POST {{HostAddress}}/api/catalog/items/1/reviews?api-version={{ApiVersion}}
+content-type: application/json
+
+{
+  "authorName": "Alice",
+  "rating": 5,
+  "title": "Great on the trail",
+  "comment": "Comfortable from the first wear and kept my feet dry."
+}

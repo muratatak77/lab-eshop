@@ -66,6 +66,29 @@ public class CatalogService(HttpClient httpClient) : ICatalogService
         return result!;
     }
 
+    public async Task<CatalogItemReviewResult> GetItemReviews(int itemId, int pageIndex, int pageSize)
+    {
+        var uri = $"{remoteServiceBaseUrl}items/{itemId}/reviews?pageIndex={pageIndex}&pageSize={pageSize}";
+        var result = await httpClient.GetFromJsonAsync<CatalogItemReviewResult>(uri);
+        return result!;
+    }
+
+    public async Task<CatalogItemReviewSummary> GetItemReviewSummary(int itemId)
+    {
+        var uri = $"{remoteServiceBaseUrl}items/{itemId}/reviews/summary";
+        var result = await httpClient.GetFromJsonAsync<CatalogItemReviewSummary>(uri);
+        return result!;
+    }
+
+    public async Task<CatalogItemReview> AddItemReview(int itemId, CreateCatalogItemReviewRequest request)
+    {
+        var uri = $"{remoteServiceBaseUrl}items/{itemId}/reviews";
+        var response = await httpClient.PostAsJsonAsync(uri, request);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<CatalogItemReview>();
+        return result!;
+    }
+
     private static string GetAllCatalogItemsUri(string baseUri, int pageIndex, int pageSize, int[]? brands, int[]? types)
     {
         string filterQs = string.Empty;

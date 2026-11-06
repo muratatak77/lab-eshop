@@ -56,6 +56,23 @@ public static class CatalogApi
             .WithDescription("Get per-brand and per-type item counts for the current filter selection, used to drive the catalog filter badges without transferring every item to the client.")
             .WithTags("Items");
 
+        // Routes for catalog item reviews.
+        api.MapGet("/items/{id:int}/reviews", GetItemReviews)
+            .WithName("ListItemReviews")
+            .WithSummary("List catalog item reviews")
+            .WithDescription("Get a paginated list of reviews for a catalog item, newest first.")
+            .WithTags("Reviews");
+        api.MapGet("/items/{id:int}/reviews/summary", GetItemReviewSummary)
+            .WithName("GetItemReviewSummary")
+            .WithSummary("Get catalog item rating summary")
+            .WithDescription("Get the review count, average rating and per-star breakdown for a catalog item.")
+            .WithTags("Reviews");
+        api.MapPost("/items/{id:int}/reviews", CreateItemReview)
+            .WithName("CreateItemReview")
+            .WithSummary("Review a catalog item")
+            .WithDescription("Add a star rating, with an optional title and comment, to a catalog item.")
+            .WithTags("Reviews");
+
         // Routes for resolving catalog items using AI.
         v1.MapGet("/items/withsemanticrelevance/{text:minlength(1)}", GetItemsBySemanticRelevanceV1)
             .WithName("GetRelevantItems")
@@ -450,6 +467,80 @@ public static class CatalogApi
         services.Context.CatalogItems.Remove(item);
         await services.Context.SaveChangesAsync();
         return TypedResults.NoContent();
+    }
+
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    public static async Task<Results<Ok<PaginatedItems<CatalogItemReview>>, NotFound>> GetItemReviews(
+        [AsParameters] PaginationRequest paginationRequest,
+        [AsParameters] CatalogServices services,
+        [Description("The catalog item id")] int id)
+    {
+        if (!await services.Context.CatalogItems.AnyAsync(ci => ci.Id == id))
+        {
+            return TypedResults.NotFound();
+        }
+
+        var pageSize = paginationRequest.PageSize;
+        var pageIndex = paginationRequest.PageIndex;
+
+        var reviews = services.Context.CatalogItemReviews.Where(r => r.CatalogItemId == id);
+
+        var totalReviews = await reviews.LongCountAsync();
+
+        var reviewsOnPage = await reviews
+            .OrderByDescending(r => r.CreatedAt)
+            .ThenByDescending(r => r.Id)
+            .Skip(pageSize * pageIndex)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return TypedResults.Ok(new PaginatedItems<CatalogItemReview>(pageIndex, pageSize, totalReviews, reviewsOnPage));
+    }
+
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    public static async Task<Results<Ok<CatalogItemReviewSummary>, NotFound>> GetItemReviewSummary(
+        [AsParameters] CatalogServices services,
+        [Description("The catalog item id")] int id)
+    {
+        if (!await services.Context.CatalogItems.AnyAsync(ci => ci.Id == id))
+        {
+            return TypedResults.NotFound();
+        }
+
+        var counts = await services.Context.CatalogItemReviews
+            .Where(r => r.CatalogItemId == id)
+            .GroupBy(r => r.Rating)
+            .Select(g => new CatalogRatingCount(g.Key, g.Count()))
+            .ToListAsync();
+
+        return TypedResults.Ok(CatalogItemReviewSummary.Create(id, counts));
+    }
+
+    public static async Task<Results<Created<CatalogItemReview>, ValidationProblem, NotFound>> CreateItemReview(
+        [AsParameters] CatalogServices services,
+        [FromServices] TimeProvider timeProvider,
+        [Description("The catalog item id")] int id,
+        CreateCatalogItemReviewRequest request)
+    {
+        var errors = request.Validate();
+        if (errors.Count > 0)
+        {
+            return TypedResults.ValidationProblem(errors);
+        }
+
+        if (!await services.Context.CatalogItems.AnyAsync(ci => ci.Id == id))
+        {
+            return TypedResults.NotFound();
+        }
+
+        var review = request.ToReview(id, timeProvider.GetUtcNow());
+
+        services.Context.CatalogItemReviews.Add(review);
+        await services.Context.SaveChangesAsync();
+
+        services.Logger.LogInformation("Added {Rating}-star review {ReviewId} for catalog item {CatalogItemId}", review.Rating, review.Id, id);
+
+        return TypedResults.Created($"/api/catalog/items/{id}/reviews", review);
     }
 
     private static string GetImageMimeTypeFromImageFileExtension(string extension) => extension switch

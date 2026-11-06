@@ -1,0 +1,46 @@
+.star-rating {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+    vertical-align: middle;
+    --star-size: 1.1rem;
+}
+
+.star-rating-sm {
+    --star-size: 0.9rem;
+}
+
+.star-rating-lg {
+    --star-size: 1.6rem;
+}
+
+.star-rating-track,
+.star-rating-fill {
+    display: inline-flex;
+    gap: 0.1rem;
+    white-space: nowrap;
+}
+
+.star-rating-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    overflow: hidden;
+}
+
+.star-rating svg {
+    flex: none;
+    width: var(--star-size);
+    height: var(--star-size);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+}
+
+.star-rating-track svg {
+    fill: none;
+    stroke: var(--color-line-strong, #c9c8c3);
+}
+
+.star-rating-fill svg {
+    fill: var(--color-ink, #141414);
+    stroke: var(--color-ink, #141414);
+}
