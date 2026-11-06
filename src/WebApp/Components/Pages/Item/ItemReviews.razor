@@ -1,8 +1,11 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Globalization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Polly.Timeout
 @using eShop.WebAppComponents.Item
 @inject CatalogService CatalogService
 @inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject ILogger<ItemReviews> Logger
 
 <section class="item-reviews" id="reviews" aria-labelledby="reviews-heading">
@@ -134,6 +137,10 @@
             </div>
         </div>
     }
+    else if (reviewsUnavailable)
+    {
+        <p class="reviews-empty" role="status">Reviews are unavailable right now. Please try again later.</p>
+    }
 </section>
 
 @code {
@@ -145,6 +152,7 @@
     private EditContext editContext = default!;
     private string? errorMessage;
     private bool submitted;
+    private bool reviewsUnavailable;
 
     [Parameter, EditorRequired]
     public int ItemId { get; set; }
@@ -157,9 +165,6 @@
 
     [SupplyParameterFromForm(FormName = FormName)]
     public ReviewFormModel Review { get; set; } = default!;
-
-    [CascadingParameter]
-    public HttpContext? HttpContext { get; set; }
 
     private int CurrentPage => Math.Max(ReviewPage ?? 0, 0);
 
@@ -177,7 +182,7 @@
     {
         errorMessage = null;
 
-        var authorName = HttpContext?.User.FindFirst("name")?.Value;
+        var authorName = await AuthenticationStateProvider.GetUserNameAsync();
         if (!IsLoggedIn || string.IsNullOrWhiteSpace(authorName))
         {
             Nav.NavigateTo(Pages.User.LogIn.Url(Nav));
@@ -212,12 +217,24 @@
 
     private async Task LoadReviewsAsync()
     {
-        var summaryTask = CatalogService.GetItemReviewSummary(ItemId);
-        var reviewsTask = CatalogService.GetItemReviews(ItemId, CurrentPage, PageSize);
-        await Task.WhenAll(summaryTask, reviewsTask);
+        try
+        {
+            var summaryTask = CatalogService.GetItemReviewSummary(ItemId);
+            var reviewsTask = CatalogService.GetItemReviews(ItemId, CurrentPage, PageSize);
+            await Task.WhenAll(summaryTask, reviewsTask);
 
-        summary = summaryTask.Result;
-        reviews = reviewsTask.Result;
+            summary = summaryTask.Result;
+            reviews = reviewsTask.Result;
+            reviewsUnavailable = false;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TimeoutRejectedException)
+        {
+            // A reviews outage must not take down the whole product page.
+            Logger.LogError(ex, "Could not load reviews for catalog item {CatalogItemId}", ItemId);
+            summary = null;
+            reviews = null;
+            reviewsUnavailable = true;
+        }
     }
 
     private string Percent(int count) =>
